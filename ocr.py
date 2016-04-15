@@ -9,6 +9,8 @@ import Image
 import bs4
 import autopy
 
+scale = 4 # Scaling with factor 2 seems to work better
+
 def get_temp_filename():
     return os.path.join(tempfile.gettempdir(), uuid.uuid4().hex + ".png")
 
@@ -24,7 +26,6 @@ def prepare_bitmap(bitmap):
     # at least 300 DPI is necessary. We don't know the monitor dpi so it's not clear
     # by how much the image needs to be scaled up.
     # Playing with these numbers might improve the ocr results.
-    scale = 4 # Scaling with factor 2 seems to work better
     image = image.convert('L')
     image = image.resize((image.size[0] * scale, image.size[1] * scale), Image.BICUBIC)
     image.save(new_file, "PNG")
@@ -39,14 +40,14 @@ def parse_hocr(hocr):
     # https://docs.google.com/document/d/1QQnIQtvdAC_8n92-LhwPcjtAUFwBlzE8EWnKAxlgVf0/preview?pref=2&pli=1#heading=h.77bd784474e5
 
     soup = bs4.BeautifulSoup(hocr)
-    result = collections.OrderedDict() 
+    result = collections.defaultdict(list) 
 
     def parse_bbox(bbox):
         m = re.match('bbox ([0-9]*) ([0-9]*) ([0-9]*) ([0-9]*)', bbox)
-        x = int(m.group(1))
-        y = int(m.group(2))
-        w = int(m.group(3)) - x
-        h = int(m.group(4)) - y
+        x = int(m.group(1)) / scale
+        y = int(m.group(2)) / scale
+        w = int(m.group(3)) / scale - x
+        h = int(m.group(4)) / scale - y
         return ((x,y), (w,h))
 
     for span in soup.find_all('span'):
@@ -54,7 +55,8 @@ def parse_hocr(hocr):
         if html_class in [u'ocrx_word', u'ocr_line']:
             text = span.text.strip()
             rect = parse_bbox(span.attrs['title'])
-            result[text] = rect
+            print text
+            result[text].append(rect)
 
     return result
 
