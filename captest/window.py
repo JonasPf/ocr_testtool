@@ -17,18 +17,18 @@ def find_text_in_rect(text, rect, occurence=0):
     try:
         positions = text_positions[text]
     except KeyError:
-        e = NotFoundException("Couldn't find string '{}'".format(text))
-        e.details += u"Strings found:\n"
+        msg = u"Couldn't find string '{}'\n".format(text)
+        msg += u"Strings found:\n"
         for text in text_positions:
-            e.details += u"    '{}'".format(text)
-        raise e
+            msg += u"    '{}'\n".format(text)
+        raise NotFoundException(msg)
 
     try:
         return positions[occurence]
     except IndexError:
-        e = NotFoundException("Coulnd't find '{}' occurences of string '{}'".format(occurence + 1, text))
-        e.details = u"Only '{}' occurences could be found".format(len(positions))
-        raise e
+        msg = u"Couldn't find '{}' occurences of string '{}'".format(occurence + 1, text)
+        msg += u"Only '{}' occurences could be found".format(len(positions))
+        raise NotFoundException(msg)
 
 def find_bitmap_in_rect(needle, rect, occurence=0):
     bitmap = autopy.bitmap.capture_screen(rect)
@@ -37,9 +37,9 @@ def find_bitmap_in_rect(needle, rect, occurence=0):
     try:
         return ((results[occurence][0], results[occurence][1]), (needle.width, needle.height))
     except IndexError:
-        e = NotFoundException("Coulnd't find '{}' occurences of '{}'".format(occurence + 1, needle))
-        e.details = u"Only '{}' occurences could be found".format(len(positions))
-        raise e
+        msg = u"Coulnd't find '{}' occurences of '{}'".format(occurence + 1, needle)
+        msg += u"Only '{}' occurences could be found".format(len(positions))
+        raise NotFoundException(msg)
     
 def open_bitmap(filename):
     return autopy.bitmap.Bitmap.open(filename)
@@ -67,6 +67,7 @@ class Window(object):
         return self._to_screen_rect(rect)
 
     def click_text(self, text, occurence=0):
+        print self.rect
         rect = self.find_text(text, occurence)
         pos = calc_center(rect)
         autopy.mouse.smooth_move(*pos)

@@ -39,7 +39,6 @@ def parse_hocr(hocr):
     # The hOCR Embedded OCR Workflow and Output Format
     # https://docs.google.com/document/d/1QQnIQtvdAC_8n92-LhwPcjtAUFwBlzE8EWnKAxlgVf0/preview?pref=2&pli=1#heading=h.77bd784474e5
 
-    print hocr
     soup = bs4.BeautifulSoup(hocr)
     result = collections.defaultdict(list) 
 
@@ -56,7 +55,6 @@ def parse_hocr(hocr):
         if html_class in [u'ocrx_word', u'ocr_line']:
             text = span.text.strip()
             rect = parse_bbox(span.attrs['title'])
-            print text
             result[text].append(rect)
 
     return dict(result)
@@ -67,7 +65,8 @@ def ocr_bitmap(bitmap):
     hocr = subprocess.check_output(['tesseract', '-l', 'eng', filename, 'stdout', '-c', 'tessedit_create_hocr=1'])    
 
     # TODO: Refactore to use try/finally
-    os.remove(filename)
+    print filename
+    #os.remove(filename)
 
     result = parse_hocr(hocr)
     return result
