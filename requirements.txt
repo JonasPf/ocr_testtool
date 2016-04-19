@@ -1,3 +1,0 @@
-autopy
-pillow
-bea

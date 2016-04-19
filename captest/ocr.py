@@ -39,6 +39,7 @@ def parse_hocr(hocr):
     # The hOCR Embedded OCR Workflow and Output Format
     # https://docs.google.com/document/d/1QQnIQtvdAC_8n92-LhwPcjtAUFwBlzE8EWnKAxlgVf0/preview?pref=2&pli=1#heading=h.77bd784474e5
 
+    print hocr
     soup = bs4.BeautifulSoup(hocr)
     result = collections.defaultdict(list) 
 
@@ -58,12 +59,11 @@ def parse_hocr(hocr):
             print text
             result[text].append(rect)
 
-    return result
+    return dict(result)
 
 def ocr_bitmap(bitmap):
     filename = prepare_bitmap(bitmap)
 
-    # TODO: Train tesseract with common screen fonts
     hocr = subprocess.check_output(['tesseract', '-l', 'eng', filename, 'stdout', '-c', 'tessedit_create_hocr=1'])    
 
     # TODO: Refactore to use try/finally

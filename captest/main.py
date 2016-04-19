@@ -13,7 +13,8 @@ time.sleep(3)
 # pprint.pprint(result)
 
 #window.click_text_in_active_window('Categories')
-window.click_text_in_active_window('Settings')
-window.click_text_in_active_window('minutes', occurence=0)
-window.click_text_in_active_window('minutes', occurence=1)
-window.click_text_in_active_window('minutes.')
+
+w = window.Window.from_active_window()
+w.click_bitmap('test.png')
+w.click_text('Todo/Projects')
+w.click_position(100,100)
