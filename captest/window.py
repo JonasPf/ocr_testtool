@@ -67,7 +67,6 @@ class Window(object):
         return self._to_screen_rect(rect)
 
     def click_text(self, text, occurence=0):
-        print self.rect
         rect = self.find_text(text, occurence)
         pos = calc_center(rect)
         autopy.mouse.smooth_move(*pos)

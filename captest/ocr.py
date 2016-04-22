@@ -6,9 +6,13 @@ import re
 import collections
 
 import Image
+import ImageOps
 import bs4
 import autopy
 
+# According to https://github.com/tesseract-ocr/tesseract/wiki/ImproveQuality#rescaling
+# at least 300 DPI is necessary. We don't know the monitor dpi so it's not clear
+# by how much the image needs to be scaled up. 4 seems to work well
 scale = 4 # Scaling with factor 2 seems to work better
 
 def get_temp_filename():
@@ -22,12 +26,11 @@ def prepare_bitmap(bitmap):
     bitmap.save(orig_file)
 
     image = Image.open(orig_file)
-    # According to https://github.com/tesseract-ocr/tesseract/wiki/ImproveQuality#rescaling
-    # at least 300 DPI is necessary. We don't know the monitor dpi so it's not clear
-    # by how much the image needs to be scaled up.
-    # Playing with these numbers might improve the ocr results.
     image = image.convert('L')
+    # Image.BICUBIC make the font less clear but the results are still better. Don't know why.
     image = image.resize((image.size[0] * scale, image.size[1] * scale), Image.BICUBIC)
+    # Convert to black and white. Doing this after the resize improves results
+    image = image.point(lambda p: p > 120 and 255, mode='1')
     image.save(new_file, "PNG")
 
     # TODO: Refactore to use try/finally
@@ -65,8 +68,7 @@ def ocr_bitmap(bitmap):
     hocr = subprocess.check_output(['tesseract', '-l', 'eng', filename, 'stdout', '-c', 'tessedit_create_hocr=1'])    
 
     # TODO: Refactore to use try/finally
-    print filename
-    #os.remove(filename)
+    os.remove(filename)
 
     result = parse_hocr(hocr)
     return result
