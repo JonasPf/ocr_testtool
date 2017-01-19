@@ -1,4 +1,14 @@
-import ocr
+import os
+
+OCR_ENGINE = os.environ.get('OCR_ENGINE', 'tesseract')
+
+if OCR_ENGINE == 'tesseract':
+    import ocr_tesseract as ocr
+elif OCR_ENGINE == 'havenondemand':
+    import ocr_havenondemand as ocr
+else:
+    raise Exception('Unkown value in environment variable OCR_ENGINE: {}'.format(OCR_ENGINE))
+
 import autopy
 import sys
 
@@ -10,9 +20,16 @@ else:
 class NotFoundException(Exception):
     pass
 
-def find_text_in_rect(text, rect, occurence=0):
+def _capture_screen(rect):
     bitmap = autopy.bitmap.capture_screen(rect)
-    text_positions = ocr.ocr_bitmap(bitmap)
+    if os.environ.get('OCR_SAVE_BEFORE', None):
+        bitmap.save('ocr.png')
+
+    return bitmap
+
+def find_text_in_rect(text, rect, occurence=0, negate=False):
+    bitmap = _capture_screen(rect)
+    text_positions = ocr.ocr_bitmap(bitmap, negate)
 
     try:
         positions = text_positions[text]
@@ -21,7 +38,7 @@ def find_text_in_rect(text, rect, occurence=0):
         msg += u"Strings found:\n"
         for text in text_positions:
             msg += u"    '{}'\n".format(text)
-        raise NotFoundException(msg)
+        raise NotFoundException(msg.encode('utf-8'))
 
     try:
         return positions[occurence]
@@ -31,7 +48,7 @@ def find_text_in_rect(text, rect, occurence=0):
         raise NotFoundException(msg)
 
 def find_bitmap_in_rect(needle, rect, occurence=0):
-    bitmap = autopy.bitmap.capture_screen(rect)
+    bitmap = _capture_screen(rect)
     results = bitmap.find_every_bitmap(needle, 0.0, None)
 
     try:
@@ -58,16 +75,16 @@ class Window(object):
     def _to_screen_rect(self, rect):
         return ((rect[0][0] + self.rect[0][0], rect[0][1] + self.rect[0][1]), (rect[1][0], rect[1][1]))
 
-    def find_text(self, text, occurence=0):
-        rect = find_text_in_rect(text, self.rect, occurence)
+    def find_text(self, text, occurence=0, negate=False):
+        rect = find_text_in_rect(text, self.rect, occurence, negate)
         return self._to_screen_rect(rect)
 
     def find_bitmap(self, needle, occurence=0):
         rect = find_bitmap_in_rect(needle, self.rect, occurence)
         return self._to_screen_rect(rect)
 
-    def click_text(self, text, occurence=0):
-        rect = self.find_text(text, occurence)
+    def click_text(self, text, occurence=0, negate=False):
+        rect = self.find_text(text, occurence, negate)
         pos = calc_center(rect)
         autopy.mouse.smooth_move(*pos)
         autopy.mouse.click()

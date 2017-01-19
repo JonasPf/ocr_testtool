@@ -7,4 +7,8 @@ setup(name='CapTest',
       author='Jonas Pfannschmidt',
       author_email='jonas.pfannschmidt@gmail.com',
       packages=find_packages(exclude=['test']),
-      install_requires=['autopy', 'pillow'])
+      install_requires=[
+      	'autopy',
+      	'pillow',
+      	'beautifulsoup4'
+      	])
