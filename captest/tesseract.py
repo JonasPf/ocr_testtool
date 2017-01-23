@@ -86,7 +86,7 @@ class Default(object):
         OCR_ENGINE_DEBUG = os.environ.get('OCR_ENGINE_DEBUG', None)
 
         if OCR_ENGINE_DEBUG:
-            LOG.warn("OCR file %s. The file will not be deleted because of environment variable OCR_ENGINE_DEBUG", filename)
+            LOG.warn("OCR file %s - The file will not be deleted because of environment variable OCR_ENGINE_DEBUG", filename)
         else:
             os.remove(filename)
 
