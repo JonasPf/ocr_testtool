@@ -4,6 +4,7 @@ import os.path
 import uuid
 import re
 import collections
+import logging
 
 from PIL import Image
 from PIL import ImageOps
@@ -17,7 +18,7 @@ TARGET_DPI=300
 def get_temp_filename(type='png'):
     return os.path.join(tempfile.gettempdir(), uuid.uuid4().hex + "." + type)
 
-def prepare_bitmap(bitmap, negate=False):
+def prepare_bitmap(bitmap):
     orig_file = get_temp_filename()
     # For some reason (maybe to do with the dpi metadata information) jpeg works better with tesseract than png
     new_file = get_temp_filename(type='jpeg')
@@ -28,12 +29,7 @@ def prepare_bitmap(bitmap, negate=False):
         # Add dpi to the original file so that we can convert it after that
         hocr = subprocess.check_output(['gm', 'convert', '-density', str(SOURCE_DPI), orig_file, orig_file])
         # Rescale to 300 dpi, change to grayscale and negate if neccessary
-        if negate:
-            print "NEGATE"
-            hocr = subprocess.check_output(['gm', 'convert', '-resample', str(TARGET_DPI), '-negate', '-quality', '100', orig_file, new_file])
-        else:
-            print "NORMAL"
-            hocr = subprocess.check_output(['gm', 'convert', '-resample', str(TARGET_DPI), '-quality', '100', orig_file, new_file])
+        hocr = subprocess.check_output(['gm', 'convert', '-resample', str(TARGET_DPI), '-type', 'grayscale', '-quality', '100', orig_file, new_file])
     except OSError:
         raise Exception('Could not find graphicsmagick (gm) binary')
 
@@ -73,16 +69,20 @@ def parse_hocr(hocr):
 
     return dict(result)
 
-def ocr_bitmap(bitmap, negate=False):
-    filename = prepare_bitmap(bitmap, negate)
+def ocr_bitmap(bitmap):
+    filename = prepare_bitmap(bitmap)
 
     try:
         hocr = subprocess.check_output(['tesseract', '-l', 'eng', filename, 'stdout', '-c', 'tessedit_create_hocr=1'])
     except OSError:
         raise Exception('Could not find tesseract binary')
 
-#    os.remove(filename)
-    print filename
+    OCR_ENGINE_DEBUG = os.environ.get('OCR_ENGINE_DEBUG', None)
+
+    if OCR_ENGINE_DEBUG:
+        logging.warn("OCR file %s. The file will not be deleted because of environment variable OCR_ENGINE_DEBUG", filename)
+    else:
+        os.remove(filename)
 
     result = parse_hocr(hocr)
     return result

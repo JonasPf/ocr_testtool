@@ -27,9 +27,9 @@ def _capture_screen(rect):
 
     return bitmap
 
-def find_text_in_rect(text, rect, occurence=0, negate=False):
+def find_text_in_rect(text, rect, occurence=0):
     bitmap = _capture_screen(rect)
-    text_positions = ocr.ocr_bitmap(bitmap, negate)
+    text_positions = ocr.ocr_bitmap(bitmap)
 
     try:
         positions = text_positions[text]
@@ -75,16 +75,16 @@ class Window(object):
     def _to_screen_rect(self, rect):
         return ((rect[0][0] + self.rect[0][0], rect[0][1] + self.rect[0][1]), (rect[1][0], rect[1][1]))
 
-    def find_text(self, text, occurence=0, negate=False):
-        rect = find_text_in_rect(text, self.rect, occurence, negate)
+    def find_text(self, text, occurence=0):
+        rect = find_text_in_rect(text, self.rect, occurence)
         return self._to_screen_rect(rect)
 
     def find_bitmap(self, needle, occurence=0):
         rect = find_bitmap_in_rect(needle, self.rect, occurence)
         return self._to_screen_rect(rect)
 
-    def click_text(self, text, occurence=0, negate=False):
-        rect = self.find_text(text, occurence, negate)
+    def click_text(self, text, occurence=0):
+        rect = self.find_text(text, occurence)
         pos = calc_center(rect)
         autopy.mouse.smooth_move(*pos)
         autopy.mouse.click()
