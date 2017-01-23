@@ -1,13 +1,13 @@
 import os
+import logging
+import importlib
 
-OCR_ENGINE = os.environ.get('OCR_ENGINE', 'tesseract')
+LOG = logging.getLogger(__name__)
 
-if OCR_ENGINE == 'tesseract':
-    import ocr_tesseract as ocr
-elif OCR_ENGINE == 'havenondemand':
-    import ocr_havenondemand as ocr
-else:
-    raise Exception('Unkown value in environment variable OCR_ENGINE: {}'.format(OCR_ENGINE))
+# OCR_ENGINE comes in the form:
+# "captest.tesseract.Default:captest.tesseract.Coloured"
+OCR_ENGINE = os.environ.get('OCR_ENGINE', 'captest.tesseract.Default')
+engines = OCR_ENGINE.split(':')
 
 import autopy
 import sys
@@ -27,25 +27,43 @@ def _capture_screen(rect):
 
     return bitmap
 
+def _load_ocr_class(engine):
+    module, clazz = engine.rsplit('.', 1)
+    MyClass = getattr(importlib.import_module(module), clazz)
+    return MyClass()
+
 def find_text_in_rect(text, rect, occurence=0):
     bitmap = _capture_screen(rect)
-    text_positions = ocr.ocr_bitmap(bitmap)
 
-    try:
-        positions = text_positions[text]
-    except KeyError:
-        msg = u"Couldn't find string '{}'\n".format(text)
-        msg += u"Strings found:\n"
-        for text in text_positions:
-            msg += u"    '{}'\n".format(text)
-        raise NotFoundException(msg.encode('utf-8'))
+    # Try all engines until one finds a match
+    for engine in engines:
+        LOG.info("Searching for a '%s' with '%s'", text, engine)
 
-    try:
-        return positions[occurence]
-    except IndexError:
-        msg = u"Couldn't find '{}' occurences of string '{}'".format(occurence + 1, text)
-        msg += u"Only '{}' occurences could be found".format(len(positions))
-        raise NotFoundException(msg)
+        ocr = _load_ocr_class(engine)
+        text_positions = ocr.ocr_bitmap(bitmap)
+
+        try:
+            positions = text_positions[text]
+        except KeyError:
+            msg = u"Couldn't find string '{}' using '{}'\n".format(text, engine)
+            msg += u"Strings found:\n"
+            for text in text_positions:
+                msg += u"    '{}'\n".format(text)
+            LOG.warn(msg)
+            continue
+
+        try:
+            # Possibly found a match here
+            return positions[occurence]
+        except IndexError:
+            msg = u"Couldn't find '{}' occurences of string '{}' using '{}'".format(occurence + 1, text, engine)
+            msg += u"Only '{}' occurences could be found".format(len(positions))
+            LOG.warn(msg)
+            continue
+
+    raise Exception("Couldn't find string '{}'".format(text))
+
+
 
 def find_bitmap_in_rect(needle, rect, occurence=0):
     bitmap = _capture_screen(rect)
