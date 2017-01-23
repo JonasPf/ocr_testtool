@@ -37,7 +37,7 @@ def find_text_in_rect(text, rect, occurence=0):
 
     # Try all engines until one finds a match
     for engine in engines:
-        LOG.info("Searching for a '%s' with '%s'", text, engine)
+        LOG.info("Searching for '%s' with '%s'", text, engine)
 
         ocr = _load_ocr_class(engine)
         text_positions = ocr.ocr_bitmap(bitmap)
@@ -47,8 +47,8 @@ def find_text_in_rect(text, rect, occurence=0):
         except KeyError:
             msg = u"Couldn't find string '{}' using '{}'\n".format(text, engine)
             msg += u"Strings found:\n"
-            for text in text_positions:
-                msg += u"    '{}'\n".format(text)
+            for available_text in text_positions:
+                msg += u"    '{}'\n".format(available_text)
             LOG.warn(msg)
             continue
 
@@ -61,7 +61,7 @@ def find_text_in_rect(text, rect, occurence=0):
             LOG.warn(msg)
             continue
 
-    raise Exception("Couldn't find string '{}'".format(text))
+    raise Exception("Couldn't find string '{}'".format(text.encode('utf8')))
 
 
 

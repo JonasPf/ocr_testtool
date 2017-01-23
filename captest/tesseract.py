@@ -11,6 +11,8 @@ from PIL import ImageOps
 import bs4
 import autopy
 
+import captest.extract_text
+
 LOG = logging.getLogger(__name__)
 
 
@@ -31,9 +33,9 @@ class Default(object):
 
         try:
             # Add dpi to the original file so that we can convert it after that
-            hocr = subprocess.check_output(['gm', 'convert', '-density', str(self.SOURCE_DPI), orig_file, orig_file])
-            # Rescale to 300 dpi, change to grayscale and negate if neccessary
-            hocr = subprocess.check_output(['gm', 'convert', '-resample', str(self.TARGET_DPI), '-type', 'grayscale', '-quality', '100', orig_file, new_file])
+            subprocess.check_output(['gm', 'convert', '-density', str(self.SOURCE_DPI), orig_file, orig_file])
+            # Rescale to 300 dpi, change to grayscale
+            subprocess.check_output(['gm', 'convert', '-resample', str(self.TARGET_DPI), '-type', 'grayscale', '-quality', '100', orig_file, new_file])
         except OSError:
             raise Exception('Could not find graphicsmagick (gm) binary')
 
@@ -92,4 +94,25 @@ class Default(object):
         return result
 
 class Coloured(Default):
-    pass
+    def _prepare_bitmap(self, bitmap):
+        orig_file = self._get_temp_filename()
+        tmp_file = self._get_temp_filename(type='jpeg')
+        new_file = self._get_temp_filename(type='jpeg')
+
+        bitmap.save(orig_file)
+
+        try:
+            # Add dpi to the original file so that we can convert it after that
+            subprocess.check_output(['gm', 'convert', '-density', str(self.SOURCE_DPI), orig_file, orig_file])
+            # Rescale to 300 dpi
+            subprocess.check_output(['gm', 'convert', '-resample', str(self.TARGET_DPI), '-quality', '100', orig_file, tmp_file])
+        except OSError:
+            raise Exception('Could not find graphicsmagick (gm) binary')
+
+        os.remove(orig_file)
+
+        captest.extract_text.extract(tmp_file, new_file)
+
+        os.remove(tmp_file)
+
+        return new_file
